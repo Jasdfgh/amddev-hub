@@ -1,0 +1,10 @@
+node_modules/
+dist/
+provenance/
+.edgeone/
+.tef_dist/
+.cache/
+__pycache__/
+.env
+.env.*
+*.log

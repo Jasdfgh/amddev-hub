@@ -1,0 +1,19 @@
+:root { color-scheme: light; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #17202d; background: #f4f6f8; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px 16px; }
+main { max-width: 680px; margin: 0 auto; padding: 28px; background: white; border: 1px solid #dce1e6; border-radius: 14px; }
+h1 { font-size: 30px; margin: 10px 0 16px; }
+p { line-height: 1.65; }
+.eyebrow { color: #a81525; font-size: 12px; font-weight: 700; letter-spacing: .14em; }
+.notice { padding: 12px; background: #fff8e7; border-left: 3px solid #b77c00; }
+form { display: grid; gap: 16px; margin: 24px 0; }
+label { display: grid; gap: 6px; }
+input, select, button, textarea { font: inherit; }
+input:not([type=checkbox]), select { width: 100%; padding: 10px; border: 1px solid #aab4c1; border-radius: 6px; }
+.check { display: flex; align-items: center; gap: 8px; }
+.check input { width: 18px; height: 18px; flex-shrink: 0; }
+button { padding: 12px 18px; background: #17202d; border: 0; border-radius: 6px; color: white; cursor: pointer; }
+button:disabled { opacity: .6; cursor: wait; }
+textarea { width: 100%; min-height: 300px; padding: 12px; font: 12px/1.6 monospace; white-space: pre; border: 1px solid #aab4c1; margin-bottom: 12px; }
+.footnote { color: #596579; font-size: 13px; }
+@media (max-width: 480px) { main { padding: 20px; } }

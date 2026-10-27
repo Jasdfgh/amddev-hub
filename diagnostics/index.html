@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>AMD Developer Hub · 访问检查</title>
+  <link rel="stylesheet" href="probe.css">
+  <script src="probe.js" defer></script>
+</head>
+<body>
+<main>
+  <p class="eyebrow">AMD DEVELOPER HUB</p>
+  <h1>访问检查</h1>
+  <p>正式内容正在准备。这一页用于验证当前网络能否打开网站及其资源。</p>
+  <p class="notice">请先关闭 VPN、代理及加速器，再用手机网络或日常宽带打开。网页无法自动确认你的网络是否经过 VPN。</p>
+  <form id="check-form">
+    <label>城市或地区<input id="region" placeholder="例如：上海" maxlength="40" required></label>
+    <label>当前网络<select id="network" required>
+      <option value="">请选择</option><option>中国电信</option><option>中国联通</option>
+      <option>中国移动</option><option>香港网络</option><option>其他网络</option><option>本地开发测试</option>
+    </select></label>
+    <label class="check"><input id="direct" type="checkbox" required>我已关闭 VPN、代理及加速器</label>
+    <button id="run" type="submit">开始检查</button>
+  </form>
+  <p id="status" role="status" aria-live="polite">等待开始。每次检查下载约 320 KiB 测试资源。</p>
+  <textarea id="report" readonly aria-label="检查结果" hidden></textarea>
+  <button id="copy" type="button" hidden>复制结果</button>
+  <p class="footnote">检查只请求本站资源；结果留在当前页面，由你决定是否分享。托管服务仍可能保留常规访问日志。此页面通过不代表正式网站或所有运营商均已验收。</p>
+</main>
+</body>
+</html>

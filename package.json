@@ -1,0 +1,15 @@
+{
+  "name": "amddev-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "New zero-dependency migration tooling around the existing static HTML/CSS/JavaScript site; not a Next.js source project.",
+  "packageManager": "pnpm@11.25.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "node scripts/build.mjs && node scripts/prepare-release.mjs",
+    "validate": "node scripts/validate-release.mjs",
+    "preview": "node scripts/preview.mjs"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
