@@ -17,6 +17,8 @@
 .journey-button.primary:hover { background:#f21d3b; transform:translateY(-2px); }
 .journey-button.secondary { background:#131213; border:1px solid #59333c; color:#f4dce0; }
 .journey-button.secondary:hover { border-color:var(--journey-red); }
+.journey-button.docs { background:transparent; border:1px solid #4a4447; color:#c8c4c6; font-weight:500; }
+.journey-button.docs:hover, .journey-button.docs:focus-visible { border-color:var(--journey-red); color:var(--journey-red); }
 .hero-path-link { padding:10px 8px; font-size:12px; color:#aaa9aa; }
 .hero-path-link span { margin-left:10px; color:var(--journey-red); }
 .journey-rail { border-block:1px solid #272627; background:#0d0c0d; }
