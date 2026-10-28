@@ -12,6 +12,5 @@ Disallow: /
 
 User-agent: *
 Allow: /
-Disallow: /__network-check/
 
 Sitemap: https://hub.amddev.ai/sitemap.xml
