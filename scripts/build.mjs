@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { projectRoot, pathsAndConfig, assertNoSymlinkTree, copyChecked, fileManifest, isWithin } from './common.mjs';
 import { validateSite } from './validate.mjs';
+import { reviewedAnalytics } from './analytics.mjs';
 try {
   const startedAt = new Date().toISOString();
   const { config, source, original, output } = await pathsAndConfig();
@@ -24,7 +25,8 @@ try {
   for (const item of config.include) await copyChecked(path.join(source, item), path.join(expectedOutput, item));
   const sourceAfter = await fileManifest(source);
   if (JSON.stringify(sourceBefore) !== JSON.stringify(sourceAfter)) throw new Error('Source files changed during the build; rerun after edits finish.');
-  const validation = await validateSite(output, { originalDirectory: original, requireNoExternalRuntimeResources: config.requireNoExternalRuntimeResources });
+  const analytics = await reviewedAnalytics(output);
+  const validation = await validateSite(output, { originalDirectory: original, requireNoExternalRuntimeResources: config.requireNoExternalRuntimeResources, reviewedRuntimeScriptHashes: analytics.reviewedRuntimeScriptHashes });
   const expectedFiles = sourceAfter.filter(item => config.include.some(include => item.path === include || item.path.startsWith(include + '/')));
   if (JSON.stringify(expectedFiles) !== JSON.stringify(validation.files)) throw new Error('Build output bytes differ from the selected source files.');
   const sourceDifferences = sourceAfter.filter(item => originalByPath.get(item.path)?.sha256 !== item.sha256).map(item => ({ path: item.path, originalSha256: originalByPath.get(item.path)?.sha256 ?? null, sourceSha256: item.sha256 }));

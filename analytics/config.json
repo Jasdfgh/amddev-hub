@@ -1,0 +1,8 @@
+{
+  "enabled": false,
+  "site": "hub",
+  "endpoint": "",
+  "allowedOrigins": ["https://hub.amddev.ai"],
+  "traffic": "production",
+  "timeoutMs": 2000
+}

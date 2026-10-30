@@ -2,10 +2,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { projectRoot, pathsAndConfig, readJson, readText, sha256, fileManifest, copyChecked } from './common.mjs';
 import { validateSite } from './validate.mjs';
+import { reviewedAnalytics, analyticsHeaders } from './analytics.mjs';
 
 const { output, original } = await pathsAndConfig();
 const renamed = new Map();
-const fingerprint = ['app.js', 'custom.css', 'journey.css', 'assets/styles.css', 'assets/theme.css', 'assets/favicon.svg', 'assets/amd-developer-group-qr-color.png'];
+const fingerprint = ['app.js', 'analytics.js', 'custom.css', 'journey.css', 'assets/styles.css', 'assets/theme.css', 'assets/favicon.svg', 'assets/amd-developer-group-qr-color.png'];
 for (const relative of fingerprint) {
   const oldPath = path.join(output, relative);
   const bytes = await fs.readFile(oldPath);
@@ -29,13 +30,15 @@ await copyChecked(diagnosticSource, diagnosticOutput);
 const chunks = Array.from({ length: 2048 }, (_, i) => Buffer.from(sha256(Buffer.from(`amddev-probe-${i}`)), 'hex'));
 await fs.writeFile(path.join(diagnosticOutput, 'sample.bin'), Buffer.concat(chunks));
 const rootConfig = await readJson(path.join(projectRoot, 'edgeone.json'));
-await fs.writeFile(path.join(output, 'edgeone.json'), JSON.stringify({ headers: rootConfig.headers }, null, 2) + '\n');
+const analytics = await reviewedAnalytics(output);
+await fs.writeFile(path.join(output, 'edgeone.json'), JSON.stringify(analyticsHeaders(rootConfig, analytics.config), null, 2) + '\n');
 
 const beforeMarker = await fileManifest(output);
 const releaseId = sha256(Buffer.from(JSON.stringify(beforeMarker))).slice(0, 16);
 html = html.replace('</head>', `<meta name="build-id" content="${releaseId}"></head>`);
 await fs.writeFile(path.join(output, 'index.html'), html);
 const reviewedRuntimeScriptHashes = {
+  ...analytics.reviewedRuntimeScriptHashes,
   '__network-check/probe.js': sha256(await fs.readFile(path.join(diagnosticSource, 'probe.js')))
 };
 const validation = await validateSite(output, { originalDirectory: original, reviewedRuntimeScriptHashes });

@@ -2,11 +2,15 @@ import path from 'node:path';
 import fs from 'node:fs/promises';
 import { projectRoot, pathsAndConfig, sha256 } from './common.mjs';
 import { validateSite } from './validate.mjs';
+import { reviewedAnalytics, verifyAnalyticsHeaders } from './analytics.mjs';
 
 const { output, original } = await pathsAndConfig();
+const analytics = await reviewedAnalytics(output);
+await verifyAnalyticsHeaders(output, analytics.config);
 const result = await validateSite(output, {
   originalDirectory: original,
   reviewedRuntimeScriptHashes: {
+    ...analytics.reviewedRuntimeScriptHashes,
     '__network-check/probe.js': sha256(await fs.readFile(path.join(projectRoot, 'diagnostics/probe.js')))
   }
 });
