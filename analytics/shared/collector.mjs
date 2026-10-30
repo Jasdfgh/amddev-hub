@@ -3,16 +3,37 @@ import { linkFromElement, mapLink, trackableFromEvent } from './link-map.mjs';
 const OPT_OUT_KEY = 'hub.analytics.optOut';
 const MAX_PENDING = 64;
 
+function privateIPv4(hostname) {
+  if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) return false;
+  const parts = hostname.split('.').map(Number);
+  if (parts.some(part => part > 255)) return false;
+  return parts[0] === 10 || parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31 || parts[0] === 192 && parts[1] === 168;
+}
+
+export function randomEventId(crypto) {
+  if (typeof crypto?.randomUUID === 'function') return crypto.randomUUID();
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 15) | 64;
+  bytes[8] = (bytes[8] & 63) | 128;
+  const hex = Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+}
+
 export function validateCollectorConfig(config, location) {
   if (!config || config.enabled !== true) return false;
   if (!['production', 'test'].includes(config.traffic)) throw new Error('Invalid analytics traffic mode');
   if (!Array.isArray(config.allowedOrigins) || !config.allowedOrigins.includes(location.origin)) return false;
   const endpoint = new URL(config.endpoint);
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname);
+  const intranetTest = config.traffic === 'test' && config.allowIntranetTestHttp === true
+    && location.protocol === 'http:' && endpoint.protocol === 'http:'
+    && privateIPv4(location.hostname) && privateIPv4(endpoint.hostname);
   if (endpoint.username || endpoint.password || endpoint.search || endpoint.hash
-      || endpoint.protocol !== 'https:' && !(config.traffic === 'test' && loopback && endpoint.protocol === 'http:')) throw new Error('Invalid analytics endpoint');
+      || endpoint.protocol !== 'https:' && !(config.traffic === 'test' && loopback && endpoint.protocol === 'http:') && !intranetTest) throw new Error('Invalid analytics endpoint');
   if (config.traffic === 'test' && !/^[a-zA-Z0-9_-]{1,64}$/.test(config.testRunId || '')) throw new Error('Test collection requires an explicit test run');
   if (config.traffic === 'production' && config.testRunId) throw new Error('Production cannot carry test-run configuration');
+  if (config.traffic === 'production' && location.protocol !== 'https:') throw new Error('Production collection requires an HTTPS source');
   return true;
 }
 
@@ -56,7 +77,7 @@ export function installCollector({ config, rules, env = globalThis, onDiagnostic
     return true;
   }
   function makeEvent(type, data = {}) {
-    const payload = { version: 1, site: config.site || 'hub', type, eventId: env.crypto.randomUUID(), pagePath: location.pathname || '/', ...data };
+    const payload = { version: 1, site: config.site || 'hub', type, eventId: randomEventId(env.crypto), pagePath: location.pathname || '/', ...data };
     // This mode comes only from reviewed build configuration, never URL input.
     payload.traffic = config.traffic;
     if (config.traffic === 'test') payload.testRunId = config.testRunId;
@@ -102,6 +123,15 @@ export function installCollector({ config, rules, env = globalThis, onDiagnostic
           remember(reply);
           return reply;
         }
+        if (response.status === 410) {
+          const reply = await response.json().catch(() => null);
+          if (reply?.code === 'identity_expired') {
+            session = null; initialEvent = null;
+            remove(sessionKey); remove(bootstrapKey);
+            diagnostic('identity_expired');
+            return { identityExpired: true };
+          }
+        }
         if (response.status < 500) return null;
       } catch { /* finite best effort; no exception escapes the event handler */ }
       finally { env.clearTimeout(timer); controllers.delete(controller); }
@@ -121,17 +151,16 @@ export function installCollector({ config, rules, env = globalThis, onDiagnostic
     if (bootstrap) return bootstrap;
     const perform = async () => {
       if (disabled()) return null;
-      if (loadSession()) {
-        if (initialEvent) {
-          const pageview = initialEvent;
-          const reply = await transmit(pageview, session.sessionToken);
-          if (reply) { initialEvent = null; remove(bootstrapKey); }
-        }
-        return session;
+      let current = loadSession();
+      if (current && !initialEvent) return current;
+      // A definitive server expiry permits one fresh bootstrap. A temporary
+      // failure retains the exact receipt/eventId and is never treated as expiry.
+      for (let renewal = 0; renewal < 2; renewal++) {
+        const reply = await transmit(bootstrapEvent(), current?.sessionToken);
+        if (reply?.identityExpired) { current = null; continue; }
+        if (reply?.accepted && loadSession()) { initialEvent = null; remove(bootstrapKey); }
+        break;
       }
-      const pageview = bootstrapEvent();
-      const reply = await transmit(pageview);
-      if (reply && loadSession()) { initialEvent = null; remove(bootstrapKey); }
       return loadSession();
     };
     // Web Locks prevents simultaneous first tabs creating separate identities.
@@ -146,11 +175,16 @@ export function installCollector({ config, rules, env = globalThis, onDiagnostic
     if (waiting.length >= MAX_PENDING) { diagnostic('queue_full'); return; }
     waiting.push(payload);
     const ownGeneration = generation;
-    trackPromise(ensureSession().then(current => {
+    trackPromise(ensureSession().then(async current => {
       const index = waiting.indexOf(payload);
       if (index !== -1) waiting.splice(index, 1);
       if (!current || disabled() || generation !== ownGeneration) return;
-      return transmit(payload, current.sessionToken);
+      const reply = await transmit(payload, current.sessionToken);
+      if (reply?.identityExpired && !disabled() && generation === ownGeneration) {
+        const renewed = await ensureSession();
+        if (renewed && !disabled() && generation === ownGeneration) return transmit(payload, renewed.sessionToken);
+      }
+      return reply;
     }).catch(() => diagnostic('submit_failed')));
   }
   function beginPageview() {
@@ -192,9 +226,9 @@ export function installCollector({ config, rules, env = globalThis, onDiagnostic
     if (event.key === sessionKey) session = null;
   }
   try { active = validateCollectorConfig(config, location); } catch { diagnostic('invalid_config'); }
-  if (!env.crypto?.randomUUID || !env.fetch || !env.AbortController) { active = false; diagnostic('unsupported_browser'); }
+  if (!(env.crypto?.randomUUID || env.crypto?.getRandomValues) || !env.fetch || !env.AbortController) { active = false; diagnostic('unsupported_browser'); }
   if (active) {
-    const probeKey = sessionKey + '.probe.' + env.crypto.randomUUID();
+    const probeKey = sessionKey + '.probe.' + randomEventId(env.crypto);
     try {
       localStorage.setItem(probeKey, '1');
       if (localStorage.getItem(probeKey) !== '1') throw new Error('Storage unavailable');

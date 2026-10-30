@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "source": "analytics/shared vendored byte-for-byte from the private analytics shared module",
-  "bundleSha256": "637a84376ef4b6591ad6a985a1d1abaaffdba419b806394386fd4ad53981b12f",
+  "bundleSha256": "18932aa074585ba34dfef2aaad28a0aaa8fe4566a3b3cc0a11b67b3e1013be85",
   "sources": {
     "link-map.mjs": "c56b08c5ecc447e48d05e59cafd4d3f7821f99bf184e724cd0e1801bd8024684",
-    "collector.mjs": "e206de28fd3e8d5c53db0df6f2d0559aee0320064c8c3a2be14eec133773b33b",
+    "collector.mjs": "ab2a066668bf3fb64a527803d04333309d25723a79a740e0818f9402ee0f5ec3",
     "catalog-rules.json": "72912a4266df3d0d6f83d30e545911e6dacc21317d56d4f14664f24d8c1c2606",
     "extract_links.py": "8bd055d2e1aabee16548eae00c4fdb9fb77b59eaf9c265ea6d3fa0fb7460c5bd",
     "build-catalog.mjs": "cbe734e646c67e2c185870d08b724b0d8c9f022be2099e0b2acd119a172dd04b"

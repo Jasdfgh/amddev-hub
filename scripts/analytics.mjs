@@ -40,7 +40,7 @@ export async function reviewedAnalytics(directoryToCheck) {
   if (config.enabled) {
     const endpoint = new URL(config.endpoint);
     if (endpoint.protocol !== 'https:' || endpoint.username || endpoint.password || endpoint.search || endpoint.hash || endpoint.pathname !== '/api/collect') throw new Error('Production collector must use one exact HTTPS /api/collect endpoint.');
-    if (config.site !== 'hub' || config.traffic !== 'production' || config.testRunId || JSON.stringify(config.allowedOrigins) !== JSON.stringify(['https://hub.amddev.ai'])) throw new Error('Production analytics config cannot include preview/test origins or traffic.');
+    if (config.site !== 'hub' || config.traffic !== 'production' || config.testRunId || config.allowIntranetTestHttp || JSON.stringify(config.allowedOrigins) !== JSON.stringify(['https://hub.amddev.ai'])) throw new Error('Production analytics config cannot include preview/test origins or traffic.');
   } else if (config.endpoint) throw new Error('Disabled deployment candidate must not carry an endpoint.');
   const { catalogFromHtml } = await import('../analytics/shared/build-catalog.mjs');
   const catalog = await catalogFromHtml(path.join(directoryToCheck, 'index.html'));
