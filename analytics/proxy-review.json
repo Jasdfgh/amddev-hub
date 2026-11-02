@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "scope": "Server-only collect proxy; fixed runtime upstream, same-origin, WebCrypto protocol. Prepared only; no cloud environment configured.",
+  "sources": {
+    "proxy-protocol.mjs": "0a1e78975e127ffe8317a069421cb6422473eaef27d1507be700f5e06a56962c",
+    "proxy.mjs": "6cbd4d4c346408ddbfe1824db64be8d7cfaa2d439429a600b53b8c630f0c7fa1",
+    "signing-adapter.mjs": "72982e4f0c4ab672f832416512a503580d6ba2f24744662c030de0c70eea25f9",
+    "bundle.mjs": "84b553bf85de8fddb57d041f97e68b66c76beff7ba1de4adafce6d59383c2e17"
+  },
+  "bundleSha256": "c1625ff7256c51508dc41a13049b8f6f505fb663b9e8a0ee2ee0002a9d95c403"
+}

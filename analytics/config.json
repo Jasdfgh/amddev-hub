@@ -1,8 +1,10 @@
 {
-  "enabled": false,
+  "enabled": true,
   "site": "hub",
-  "endpoint": "",
-  "allowedOrigins": ["https://hub.amddev.ai"],
+  "endpoint": "https://hub.amddev.ai/api/collect",
+  "allowedOrigins": [
+    "https://hub.amddev.ai"
+  ],
   "traffic": "production",
-  "timeoutMs": 2000
+  "timeoutMs": 60000
 }

@@ -52,7 +52,7 @@ function hrefsForGithub(text) {
 function absoluteWebReference(value) { return /^(?:https?:)?\/\//i.test(value); }
 function sameList(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
 
-export async function validateSite(directory, { originalDirectory, requireNoExternalRuntimeResources = true, reviewedRuntimeScriptHashes = {} } = {}) {
+export async function validateSite(directory, { originalDirectory, requireNoExternalRuntimeResources = true, reviewedRuntimeScriptHashes = {}, reviewedServerScriptHashes = {} } = {}) {
   const root = path.resolve(directory);
   const files = await collectFiles(root);
   const htmlDocuments = new Map();
@@ -67,6 +67,13 @@ export async function validateSite(directory, { originalDirectory, requireNoExte
   const duplicateIds = [];
   const runtimeRef = (file, value, kind) => references.push({ file, value, kind });
   for (const file of files) {
+    const relative = toPosix(path.relative(root, file));
+    if (relative.startsWith('edge-functions/')) {
+      const expected = reviewedServerScriptHashes[relative];
+      const actual = (await fileManifest(path.dirname(file))).find(row => row.path === path.basename(file))?.sha256;
+      if (!expected || actual !== expected || !relative.endsWith('.js')) fail('Unreviewed Makers server function: ' + relative);
+      continue; // Separately pinned server-only functions are not browser resources.
+    }
     const extension = path.extname(file).toLowerCase();
     if (!['.html', '.css', '.js', '.svg'].includes(extension)) continue;
     const text = await readText(file);

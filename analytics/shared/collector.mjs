@@ -2,6 +2,8 @@ import { linkFromElement, mapLink, trackableFromEvent } from './link-map.mjs';
 
 const OPT_OUT_KEY = 'hub.analytics.optOut';
 const MAX_PENDING = 64;
+const DEFAULT_TIMEOUT_MS = 2000;
+const MAX_TIMEOUT_MS = 60000;
 
 function privateIPv4(hostname) {
   if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) return false;
@@ -23,6 +25,7 @@ export function randomEventId(crypto) {
 export function validateCollectorConfig(config, location) {
   if (!config || config.enabled !== true) return false;
   if (!['production', 'test'].includes(config.traffic)) throw new Error('Invalid analytics traffic mode');
+  if (config.timeoutMs !== undefined && (!Number.isInteger(config.timeoutMs) || config.timeoutMs < 100 || config.timeoutMs > MAX_TIMEOUT_MS)) throw new Error('Invalid analytics timeout');
   if (!Array.isArray(config.allowedOrigins) || !config.allowedOrigins.includes(location.origin)) return false;
   const endpoint = new URL(config.endpoint);
   const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(endpoint.hostname);
@@ -107,7 +110,9 @@ export function installCollector({ config, rules, env = globalThis, onDiagnostic
       if (disabled() || ownGeneration !== generation) return null;
       const controller = new env.AbortController();
       controllers.add(controller);
-      const timer = env.setTimeout(() => controller.abort(), Math.max(100, Math.min(config.timeoutMs || 2000, 5000)));
+      // A reviewed deployment may allow a serverless cold start. Collection is
+      // still asynchronous, keepalive and bounded; native navigation never waits.
+      const timer = env.setTimeout(() => controller.abort(), config.timeoutMs ?? DEFAULT_TIMEOUT_MS);
       try {
         const body = token ? { ...payload, sessionToken: token } : payload;
         const response = await env.fetch(config.endpoint, {

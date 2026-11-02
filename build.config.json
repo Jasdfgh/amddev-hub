@@ -4,6 +4,7 @@
   "originalDirectory": "original",
   "outputDirectory": "dist",
   "include": ["index.html", "app.js", "analytics.js", "custom.css", "journey.css", "assets", "robots.txt", "sitemap.xml", "404.html"],
+  "serverInclude": ["edge-functions/api/collect.js", "package.json"],
   "proposedProductionOrigin": "https://hub.amddev.ai/",
   "requireNoExternalRuntimeResources": true,
   "notes": "Build validates the maintained site against the delivered snapshot; prepare-release fingerprints local assets and applies the reviewed EdgeOne headers."

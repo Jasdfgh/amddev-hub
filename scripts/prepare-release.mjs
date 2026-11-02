@@ -3,6 +3,7 @@ import path from 'node:path';
 import { projectRoot, pathsAndConfig, readJson, readText, sha256, fileManifest, copyChecked } from './common.mjs';
 import { validateSite } from './validate.mjs';
 import { reviewedAnalytics, analyticsHeaders } from './analytics.mjs';
+import { reviewedMakers } from './makers.mjs';
 
 const { output, original } = await pathsAndConfig();
 const renamed = new Map();
@@ -32,6 +33,7 @@ await fs.writeFile(path.join(diagnosticOutput, 'sample.bin'), Buffer.concat(chun
 const rootConfig = await readJson(path.join(projectRoot, 'edgeone.json'));
 const analytics = await reviewedAnalytics(output);
 await fs.writeFile(path.join(output, 'edgeone.json'), JSON.stringify(analyticsHeaders(rootConfig, analytics.config), null, 2) + '\n');
+const makers = await reviewedMakers(output, { stage: true });
 
 const beforeMarker = await fileManifest(output);
 const releaseId = sha256(Buffer.from(JSON.stringify(beforeMarker))).slice(0, 16);
@@ -41,7 +43,7 @@ const reviewedRuntimeScriptHashes = {
   ...analytics.reviewedRuntimeScriptHashes,
   '__network-check/probe.js': sha256(await fs.readFile(path.join(diagnosticSource, 'probe.js')))
 };
-const validation = await validateSite(output, { originalDirectory: original, reviewedRuntimeScriptHashes });
+const validation = await validateSite(output, { originalDirectory: original, reviewedRuntimeScriptHashes, ...makers });
 const report = { releaseId, generatedAt: new Date().toISOString(), nodeVersion: process.version,
   assetMapping: Object.fromEntries(renamed), reviewedRuntimeScriptHashes, validation };
 await fs.mkdir(path.join(projectRoot, 'provenance'), { recursive: true });

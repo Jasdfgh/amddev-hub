@@ -56,7 +56,14 @@ export function analyticsHeaders(rootConfig, config) {
   const policy = headers.find(row => row.source === '/*')?.headers.find(row => row.key.toLowerCase() === 'content-security-policy');
   if (!policy || !/connect-src 'none'/.test(policy.value)) throw new Error('Expected existing deny-all main-page connect-src before analytics adaptation.');
   if (config.enabled) policy.value = policy.value.replace("connect-src 'none'", 'connect-src ' + config.endpoint);
-  return { headers };
+  const releaseConfig = { headers };
+  // Direct-upload runtime fields are retained; local build settings are not uploaded.
+  for (const field of ['redirects', 'rewrites']) if (rootConfig[field] !== undefined) releaseConfig[field] = structuredClone(rootConfig[field]);
+  const allowed = new Set(['headers', 'redirects', 'rewrites', 'buildCommand', 'installCommand', 'outputDirectory', 'nodeVersion', 'devCommand']);
+  if (Object.keys(rootConfig).some(field => !allowed.has(field))) throw new Error('Unsupported EdgeOne field would be lost in direct upload; review before release.');
+  const collectPolicy = headers.find(row => row.source === '/api/collect')?.headers;
+  if (!collectPolicy?.some(row => row.key.toLowerCase() === 'cache-control' && row.value === 'no-store')) throw new Error('Collector API must have an explicit no-store policy.');
+  return releaseConfig;
 }
 
 export async function verifyAnalyticsHeaders(output, config) {
